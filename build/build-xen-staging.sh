@@ -72,6 +72,16 @@ then
 	debug_symbols=n
 	popd
 fi
+if test -x /usr/lib/systemd/systemd
+then
+	with_systemd="--disable-systemd"
+else
+	with_systemd="
+		--enable-systemd \
+		--with-systemd=/usr/lib/systemd/system \
+		--with-systemd-modules-load=/usr/lib/modules-load.d \
+	"
+fi
 export http_proxy=$proxy
 export https_proxy=$proxy
 export ftp_proxy=$proxy
@@ -123,7 +133,7 @@ case "${cmd}" in
 		--disable-xenstore-stubdom \
 		--enable-xxx-ioemu-stubdom \
 		--disable-ovmf \
-		--disable-systemd \
+		$with_systemd \
 		--prefix=${prefix} \
 		--libdir=${libdir} \
 		--sysconfdir=${sysconfdir} \
