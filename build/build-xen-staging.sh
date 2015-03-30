@@ -76,6 +76,7 @@ do_make() {
 	local target=$1
 	if shift ; then : ; fi
 	time \
+		env \
 		gmake \
 			-j ${cpus} \
 			$target \
