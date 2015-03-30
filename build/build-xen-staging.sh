@@ -74,13 +74,13 @@ then
 fi
 if test -x /usr/lib/systemd/systemd
 then
-	with_systemd="--disable-systemd"
-else
 	with_systemd="
 		--enable-systemd \
 		--with-systemd=/usr/lib/systemd/system \
 		--with-systemd-modules-load=/usr/lib/modules-load.d \
 	"
+else
+	with_systemd="--disable-systemd"
 fi
 export http_proxy=$proxy
 export https_proxy=$proxy
