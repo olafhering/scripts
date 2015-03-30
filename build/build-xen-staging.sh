@@ -102,7 +102,7 @@ case "${cmd}" in
 	time \
 		env \
 		./configure \
-		--disable-docs \
+		--enable-docs \
 		--enable-tools \
 		--enable-xen \
 		--disable-stubdom \
