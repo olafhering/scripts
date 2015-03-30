@@ -62,9 +62,13 @@ for f in $xen_fentries
 do
 	test -f $f || exit 1
 done
+debug=y
+debug_symbols=y
 if pushd ../gcc-no-g/bin
 then
 	export PATH="$PWD:$PATH"
+	debug=n
+	debug_symbols=n
 	popd
 fi
 export http_proxy=$proxy
@@ -80,8 +84,8 @@ do_make() {
 		gmake \
 			-j ${cpus} \
 			$target \
-			debug=n \
-			debug_symbols=n \
+			debug=$debug \
+			debug_symbols=$debug_symbols \
 			V=1 \
 			OVMF_UPSTREAM_URL=$OVMF_UPSTREAM_URL \
 			QEMU_UPSTREAM_URL=$QEMU_UPSTREAM_URL \
