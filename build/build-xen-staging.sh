@@ -32,6 +32,7 @@ prefix=/opt/xen/${branch}
 libdir=${prefix}/lib64
 sysconfdir=${prefix}/etc
 proxy=http://probook.fritz.box:3128
+MINIOS_UPSTREAM_URL=git://probook.fritz.box/mini-os.git
 OVMF_UPSTREAM_URL=git://probook.fritz.box/ovmf.git
 QEMU_UPSTREAM_URL=git://probook.fritz.box/qemu-upstream-unstable.git
 QEMU_TRADITIONAL_URL=git://probook.fritz.box/qemu-xen-unstable.git
@@ -87,6 +88,7 @@ do_make() {
 			debug=$debug \
 			debug_symbols=$debug_symbols \
 			V=1 \
+			MINIOS_UPSTREAM_URL=$MINIOS_UPSTREAM_URL \
 			OVMF_UPSTREAM_URL=$OVMF_UPSTREAM_URL \
 			QEMU_UPSTREAM_URL=$QEMU_UPSTREAM_URL \
 			QEMU_TRADITIONAL_URL=$QEMU_TRADITIONAL_URL \
