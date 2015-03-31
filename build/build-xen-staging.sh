@@ -174,6 +174,7 @@ case "${cmd}" in
 		do_make "$@"
 	;;
 	-t)
+		rm -rf dist/install
 		find * -name "*.[ch]" -type f -print0 | sort -z | xargs -0 /bin/ls -1 | cscope -bi- &
 #		find * -name "*.[ch]" -type f -print0 | sort -z | xargs -0 /bin/ls -1 | ctags -L - &
 		wait
