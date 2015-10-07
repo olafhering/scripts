@@ -98,7 +98,7 @@ do
 				continue
 			fi
 			case "$LABEL" in
-				WD20_BOOT) MNT=/boot/chainloader ;;
+				WD20_BOOT) MNT=/chainloader ;;
 				WD20_DIST) MNT=/dist ;;
 				WD20_MUSIC) MNT=/Music ;;
 				WD20_VM_IMAGES) MNT=/vm_images ;;
