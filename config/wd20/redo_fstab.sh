@@ -156,7 +156,7 @@ do
 			then
 				if pushd "${base_dir}" > /dev/null
 				then
-					mkdir -vp ./vm_images/xen_images ./var/lib/xen/images
+					mkdir -vp ./vm_images            ./var/lib/xen/images
 					add_array  /vm_images/xen_images  /var/lib/xen/images  bind       bind                   0 0
 					popd > /dev/null
 				fi
