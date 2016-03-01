@@ -4,6 +4,7 @@ unset LANG
 unset ${!LC_*}
 
 d=/dev/disk/by-id/wwn-0x50014ee6afdce999
+lbl_pfx=WD20_
 
 get_size()
 {
@@ -16,7 +17,7 @@ get_size()
 	then
 		exit 1
 	fi
-	cat /sys/dev/block/$mm/device/size
+	cat /sys/dev/block/$mm/device/block/*/size
 }
 
 ds=`get_size ${d}`
@@ -43,6 +44,34 @@ read
 declare -i offset=0
 declare -i part=1
 :
+get_partition_type() {
+	local pt=$1
+	case "${pt}" in
+	ext2) pt=0x83 ;;
+	ext3) pt=0x83 ;;
+	ext4) pt=0x83 ;;
+	xfs)  pt=0x83 ;;
+	swap) pt=0x82 ;;
+	ntfs) pt=0x07 ;;
+	0x*)  pt=${pt};;
+	*)    pt=0x83 ;;
+	esac
+	echo "${pt}"
+}
+:
+get_partition_fs() {
+	local fs=$1
+	case "${fs}" in
+	ext2) fs=ext2 ;;
+	ext3) fs=ext3 ;;
+	ext4) fs=ext4 ;;
+	xfs)  fs=xfs ;;
+	swap) fs=swap ;;
+	*)    fs= ;;
+	esac
+	echo "${fs}"
+}
+:
 add_offset() {
 	local -i v=$1
 	v=$(( ${v} / ${bs} ))
@@ -51,32 +80,91 @@ add_offset() {
 }
 bdrrpt() {
 	local -i cnt=5
-	udevadm settle --timeout=9
+	udevadm settle
 	until blockdev --rereadpt ${d} && test ${cnt} -gt 0
 	do
 		sleep 0.5
 		: $(( cnt-- ))
 	done
-	udevadm settle --timeout=9
+	udevadm settle
 
 }
-set_label() {
+set_partition_type() {
+	local ptype=$1
+
+	${p} set ${part} type $ptype
+	udevadm settle
+}
+:
+mk_swap() {
 	local label=$1
+	dd if=/dev/zero bs=$((1024*1024)) count=42 of=${d}-part${part}
 	mkswap -L "${label}" ${d}-part${part}
-	udevadm settle --timeout=9
+	udevadm settle
+}
+:
+mkfs_ext2() {
+	local label=$1
+	dd if=/dev/zero bs=$((1024*1024)) count=42 of=${d}-part${part}
+	mkfs -t ext2 -b 2048 -m 1 -L "${label}" ${d}-part${part}
+	udevadm settle
+	tune2fs -c 0 -i 0 ${d}-part${part}
+}
+:
+mkfs_ext3() {
+	local label=$1
+	dd if=/dev/zero bs=$((1024*1024)) count=42 of=${d}-part${part}
+	mkfs -t ext3 -b 2048 -m 1 -L "${label}" ${d}-part${part}
+	udevadm settle
+	tune2fs -c 0 -i 0 ${d}-part${part}
+}
+:
+mkfs_ext4() {
+	local label=$1
+	dd if=/dev/zero bs=$((1024*1024)) count=42 of=${d}-part${part}
+	mkfs -t ext4 -b 2048 -m 1 -O flex_bg,uninit_bg -L "${label}" ${d}-part${part}
+	udevadm settle
+	tune2fs -c 0 -i 0 ${d}-part${part}
+}
+:
+mkfs_xfs() {
+	local label=$1
+	dd if=/dev/zero bs=$((1024*1024)) count=42 of=${d}-part${part}
+	mkfs -t xfs -m crc=0 -L "${label}" ${d}-part${part}
+	udevadm settle
+}
+:
+mk_fs() {
+	local ptype=$1
+	local label=$2
+	local pt
+	local fs
+
+	pt=` get_partition_type ${ptype} `
+	set_partition_type ${pt}
+	fs=` get_partition_fs ${ptype} `
+	case "${fs}" in
+	ext2) mkfs_ext2 "${label}" ;;
+	ext3) mkfs_ext3 "${label}" ;;
+	ext4) mkfs_ext4 "${label}" ;;
+	swap) mk_swap   "${label}" ;;
+	xfs)  mkfs_xfs  "${label}" ;;
+	esac
+	udevadm settle
 	: $(( part++ ))
 	bdrrpt
 }
 mp() {
 	local -i start=${offset}
 	local -i size=$1
-	local label=$2
+	local ptype=$2
+	local label=$3
 	local -i partition_size=$(( ( ${size} / ${bs} ) ))
 	partition_size=$(( ${partition_size} - 1 ))
 	$pmp ${start}s $(( ${start} + ${partition_size} ))s
 	add_offset ${size}
 	bdrrpt
-	set_label "${label}"
+	mk_fs "${ptype}" "${lbl_pfx}${label}"
 }
 me() {
 	local -i start=${offset}
@@ -89,14 +177,15 @@ me() {
 ml() {
 	local -i start=${offset}
 	local -i size=$1
-	local label=$2
+	local ptype=$2
+	local label=$3
 	local -i partition_size=$(( ( ${size} / ${bs} ) ))
 	partition_size=$(( ${partition_size} - 1 ))
 	$pml ${start}s $(( ${start} + ${partition_size} ))s
 	add_offset ${size}
 	add_offset $(( 1024 * 1024 ))
 	bdrrpt
-	set_label "${label}"
+	mk_fs "${ptype}" "${lbl_pfx}${label}"
 }
 mlx() {
 	local label=$1
@@ -104,60 +193,63 @@ mlx() {
 	local -i partition_size=$(( ${ds} - 1 ))
 	$pml linux-swap ${start}s $(( ${partition_size} ))s
 	bdrrpt
-	set_label "${label}"
+	mk_fs "xfs" "${lbl_pfx}${label}"
 }
 :
 $p unit s print
 $p mklabel msdos
 add_offset $(( 1024 * 1024 ))
-mp $(( (1024*1024*1024) * 2)) BOOT
-mp $(( (1024*1024*1024) * 1)) WINBOOT
-mp $(( (1024*1024*1024) * 8 )) SWAP
+mp $(( (1024*1024*1024) * 2)) ext3 BOOT
+mp $(( (1024*1024*1024) * 1)) ntfs WINBOOT
+mp $(( (1024*1024*1024) * 8 )) swap SWAP
 me
-ml $(( (1024*1024*1024) * 25 )) WS2008
-ml $(( (1024*1024*1024) * 25 )) WS2008R2
-ml $(( (1024*1024*1024) * 35 )) WS2012
-ml $(( (1024*1024*1024) * 35 )) WS2012R2
-ml $(( (1024*1024*1024) * 35 )) WS10
-ml $(( (1024*1024*1024) * 35 )) WS10R2
-ml $(( (1024*1024*1024) * 35 )) WS20
-ml $(( (1024*1024*1024) * 250 )) WINDATA
+ml $(( (1024*1024*1024) * 25  )) ntfs WS2008
+ml $(( (1024*1024*1024) * 25  )) ntfs WS2008R2
+ml $(( (1024*1024*1024) * 35  )) ntfs WS2012
+ml $(( (1024*1024*1024) * 35  )) ntfs WS2012R2
+ml $(( (1024*1024*1024) * 35  )) ntfs WS10
+ml $(( (1024*1024*1024) * 35  )) ntfs WS10R2
+ml $(( (1024*1024*1024) * 35  )) ntfs WS20
+ml $(( (1024*1024*1024) * 260 )) ntfs WINDATA
 :
-ml $(( (1024*1024*1024) * 30 )) TW
-ml $(( (1024*1024*1024) * 30 )) Factory
-ml $(( (1024*1024*1024) * 10 )) 11.4
-ml $(( (1024*1024*1024) * 10 )) 13.1
-ml $(( (1024*1024*1024) * 10 )) 13.2
-ml $(( (1024*1024*1024) * 10 )) 13.3
-ml $(( (1024*1024*1024) * 10 )) 13.4
-ml $(( (1024*1024*1024) * 10 )) SL11DEV
-ml $(( (1024*1024*1024) * 10 )) SL12DEV
-ml $(( (1024*1024*1024) * 10 )) SL13DEV
-ml $(( (1024*1024*1024) * 10 )) SL11SP2
-ml $(( (1024*1024*1024) * 10 )) SL11SP3
-ml $(( (1024*1024*1024) * 10 )) SL11SP4
-ml $(( (1024*1024*1024) * 10 )) SL11SP5
-ml $(( (1024*1024*1024) * 10 )) SLED11
-ml $(( (1024*1024*1024) * 10 )) SLED12
-ml $(( (1024*1024*1024) * 10 )) SLED13
-ml $(( (1024*1024*1024) * 10 )) SL12
-ml $(( (1024*1024*1024) * 10 )) SL12SP1
-ml $(( (1024*1024*1024) * 10 )) SL12SP2
-ml $(( (1024*1024*1024) * 10 )) SL12SP3
-ml $(( (1024*1024*1024) * 10 )) SL12SP4
-ml $(( (1024*1024*1024) * 10 )) SL12SP5
-ml $(( (1024*1024*1024) * 20 )) ArchLinux
-ml $(( (1024*1024*1024) * 20 )) Debian
-ml $(( (1024*1024*1024) * 20 )) Fedora
-ml $(( (1024*1024*1024) * 20 )) Ubuntu
-ml $(( (1024*1024*1024) * 20 )) OpenBSD
-ml $(( (1024*1024*1024) * 20 )) FreeBSD
-ml $(( (1024*1024*1024) * 20 )) NetBSD
-ml $(( (1024*1024*1024) * 10 )) Spare1
-ml $(( (1024*1024*1024) * 10 )) Spare2
-ml $(( (1024*1024*1024) * 110 )) Music
-ml $(( (1024*1024*1024) * 285 )) vm_images
-mlx dist
+ml $(( (1024*1024*1024) * 30  )) ext4 TW
+ml $(( (1024*1024*1024) * 11  )) ext4 11.4
+ml $(( (1024*1024*1024) * 11  )) ext4 13.1
+ml $(( (1024*1024*1024) * 11  )) ext4 13.2
+ml $(( (1024*1024*1024) * 11  )) ext4 42.1
+ml $(( (1024*1024*1024) * 11  )) ext4 42.2
+ml $(( (1024*1024*1024) * 11  )) ext4 42.3
+ml $(( (1024*1024*1024) * 11  )) ext4 42.4
+ml $(( (1024*1024*1024) * 11  )) ext4 42.5
+ml $(( (1024*1024*1024) * 11  )) ext3 SL11DEV
+ml $(( (1024*1024*1024) * 11  )) ext4 SL12DEV
+ml $(( (1024*1024*1024) * 11  )) ext4 SL13DEV
+ml $(( (1024*1024*1024) * 11  )) ext3 SL11SP2
+ml $(( (1024*1024*1024) * 11  )) ext3 SL11SP3
+ml $(( (1024*1024*1024) * 11  )) ext3 SL11SP4
+ml $(( (1024*1024*1024) * 11  )) ext3 SL11SP5
+ml $(( (1024*1024*1024) * 11  )) ext3 SLED11
+ml $(( (1024*1024*1024) * 11  )) ext4 SLED12
+ml $(( (1024*1024*1024) * 11  )) ext4 SLED13
+ml $(( (1024*1024*1024) * 11  )) ext4 SL12
+ml $(( (1024*1024*1024) * 11  )) ext4 SL12SP1
+ml $(( (1024*1024*1024) * 11  )) ext4 SL12SP2
+ml $(( (1024*1024*1024) * 11  )) ext4 SL12SP3
+ml $(( (1024*1024*1024) * 11  )) ext4 SL12SP4
+ml $(( (1024*1024*1024) * 11  )) ext4 SL12SP5
+ml $(( (1024*1024*1024) * 11  )) ext4 ArchLinux
+ml $(( (1024*1024*1024) * 11  )) ext4 Debian
+ml $(( (1024*1024*1024) * 11  )) ext4 Fedora
+ml $(( (1024*1024*1024) * 11  )) ext4 Ubuntu
+ml $(( (1024*1024*1024) * 15  )) 0xa6 OpenBSD
+ml $(( (1024*1024*1024) * 15  )) 0xa6 FreeBSD
+ml $(( (1024*1024*1024) * 15  )) 0xa5 NetBSD
+ml $(( (1024*1024*1024) * 10  )) ext4 Spare1
+ml $(( (1024*1024*1024) * 10  )) ext4 Spare2
+ml $(( (1024*1024*1024) * 80  )) xfs  WORK
+ml $(( (1024*1024*1024) * 100 )) xfs  MUSIC
+ml $(( (1024*1024*1024) * 285 )) xfs  VM_IMG
+mlx DIST
 :
 $p unit s print
 $p unit KiB print
