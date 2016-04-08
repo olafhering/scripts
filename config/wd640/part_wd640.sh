@@ -4,6 +4,7 @@ unset LANG
 unset ${!LC_*}
 
 d=/dev/disk/by-id/wwn-0x50014ee2590ff8f9
+d=/dev/disk/by-id/scsi-350014ee2590ff8f9
 
 get_size()
 {
@@ -51,19 +52,19 @@ add_offset() {
 }
 bdrrpt() {
 	local -i cnt=5
-	udevadm settle --timeout=9
+	udevadm settle
 	until blockdev --rereadpt ${d} && test ${cnt} -gt 0
 	do
 		sleep 0.5
 		: $(( cnt-- ))
 	done
-	udevadm settle --timeout=9
+	udevadm settle
 
 }
 set_label() {
 	local label=$1
 	mkswap -L "${label}" ${d}-part${part}
-	udevadm settle --timeout=9
+	udevadm settle
 	: $(( part++ ))
 	bdrrpt
 }
@@ -104,23 +105,29 @@ mlx() {
 	local -i partition_size=$(( ${ds} - 1 ))
 	$pml linux-swap ${start}s $(( ${partition_size} ))s
 	bdrrpt
-	set_label "${label}"
+	${p} set ${part} type 0x8e
+	bdrrpt
+	dd if=/dev/urandom bs=42M count=42 of=${d}-part${part}
+	cryptsetup luksFormat --use-random --cipher=aes-xts-plain64 --key-size=512 ${d}-part${part}
+	bdrrpt
 }
 :
 $p unit s print
 $p mklabel msdos
 add_offset $(( 1024 * 1024 ))
-mp $(( (1024*1024*1024) * 2)) BOOT
-mp $(( (1024*1024*1024) * 1)) WINBOOT
-mp $(( (1024*1024*1024) * 8 )) SWAP
+mp $(( (1024*1024*1024) * 2  )) BOOT
+mp $(( (1024*1024*1024) * 1  )) WINBOOT
+mp $(( (1024*1024*1024) * 42 )) UDF
 me
-ml $(( (1024*1024*1024) * 42 )) Privat
-ml $(( (1024*1024*1024) * 42 )) Windows
-ml $(( (1024*1024*1024) * 42 )) Debian
-ml $(( (1024*1024*1024) * 42 )) SLED11
-ml $(( (1024*1024*1024) * 42 )) openSUSE
+ml $(( (1024*1024*1024) * 42 )) Android
+ml $(( (1024*1024*1024) * 42 )) Win7
+ml $(( (1024*1024*1024) * 42 )) Win8
+ml $(( (1024*1024*1024) * 42 )) Win10
+ml $(( (1024*1024*1024) * 42 )) FreeBSD
+ml $(( (1024*1024*1024) * 42 )) OpenBSD
+ml $(( (1024*1024*1024) * 42 )) NetBSD
 :
-mlx dist
+mlx crypt_lvm
 :
 $p unit s print
 $p unit KiB print
