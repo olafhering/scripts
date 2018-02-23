@@ -102,19 +102,31 @@ do
 				WD20_DIST) MNT=/dist ;;
 				WD20_MUSIC) MNT=/Music ;;
 				WD20_VM_IMAGES) MNT=/vm_images ;;
+				WD20_VM_IMG) MNT=/vm_images ;;
 				WD20_WORK) MNT=/work ;;
 				*) MNT=/$LABEL ;;
 			esac
 			DIR=$MNT
+			AUTOFS=",x-systemd.automount,x-systemd.idle-timeout=22"
 			if test "${mm_node}" = "${mm_fstab}"
 			then
 				DIR=
 				MNT=/
 				FSCK="1 1"
+				AUTOFS=
 			fi
+			opts=defaults
+			case "$TYPE" in
+				ext2|ext3|ext4)
+				OPTS="noatime,acl,user_xattr$AUTOFS"
+				;;
+				xfs)
+				OPTS="noatime$AUTOFS"
+				;;
+			esac
 			case "$TYPE" in
 				ext2|ext3|ext4|xfs)
-				add_array LABEL=$LABEL $MNT $TYPE noatime,acl,user_xattr $FSCK
+				add_array LABEL=$LABEL $MNT $TYPE $OPTS $FSCK
 				: mm_root ${mm_root} mm_fstab ${mm_fstab} mm_node ${mm_node}
 				if pushd "${base_dir}" > /dev/null
 				then
