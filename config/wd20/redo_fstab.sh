@@ -77,6 +77,19 @@ do
 	fi
 	mm_fstab=$(printf %x `stat -Lc %d ${fstab}` )
 	echo $fstab on $base_dir
+	DIST_FSCK="1 2"
+	DIST_EXT_AUTOFS=",x-systemd.automount,x-systemd.idle-timeout=22"
+	DIST_XFS_AUTOFS=",x-systemd.automount,x-systemd.idle-timeout=22"
+	if test -e $base_dir/etc/SuSE-release
+	then
+		if grep -q ^VERSION.*=.*11 $base_dir/etc/SuSE-release
+		then
+			echo "CODE11"
+			DIST_FSCK="0 0"
+			DIST_EXT_AUTOFS=",noauto"
+			DIST_XFS_AUTOFS=""
+		fi
+	fi
 	cat $fstab > $new_fstab
 	sed -i /LABEL=/d $new_fstab
 	sed -i /\\/vm_images/d $new_fstab
@@ -94,7 +107,7 @@ do
 			unset LABEL
 			unset TYPE
 			unset MNT
-			FSCK="1 2"
+			FSCK="${DIST_FSCK}"
 			. $t
 			if test -z "$LABEL"
 			then
@@ -110,21 +123,23 @@ do
 				*) MNT=/$LABEL ;;
 			esac
 			DIR=$MNT
-			AUTOFS=",x-systemd.automount,x-systemd.idle-timeout=22"
+			EXT_AUTOFS="${DIST_EXT_AUTOFS}"
+			XFS_AUTOFS="${DIST_XFS_AUTOFS}"
 			if test "${mm_node}" = "${mm_fstab}"
 			then
 				DIR=
 				MNT=/
 				FSCK="1 1"
-				AUTOFS=
+				EXT_AUTOFS=
+				XFS_AUTOFS=
 			fi
 			opts=defaults
 			case "$TYPE" in
 				ext2|ext3|ext4)
-				OPTS="noatime,acl,user_xattr$AUTOFS"
+				OPTS="noatime,acl,user_xattr${EXT_AUTOFS}"
 				;;
 				xfs)
-				OPTS="noatime$AUTOFS"
+				OPTS="noatime${XFS_AUTOFS}"
 				;;
 			esac
 			case "$TYPE" in
