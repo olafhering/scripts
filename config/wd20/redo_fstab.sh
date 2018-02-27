@@ -1,8 +1,11 @@
 #!/bin/bash
 
 #et -x
-t=`mktemp --tmpdir=/dev/shm`
-new_fstab=`mktemp --tmpdir=/dev/shm`
+td=`mktemp --directory --tmpdir=/dev/shm`
+test -n "${td}" || exit 1
+trap "rm -rf \"${td}\"" EXIT
+t="${td}/t"
+new_fstab="${td}/new_fstab"
 
 add_array() {
 	local _spec=${#1}
@@ -191,5 +194,3 @@ do
 	echo
 	cat $new_fstab > $fstab
 done
-rm -f $t
-rm -f $new_fstab
