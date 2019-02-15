@@ -1,0 +1,307 @@
+#!/bin/bash
+# EdgeRouter X
+#et -v
+set -e
+echo $PATH
+export PATH=/usr/sbin:/sbin:/usr/bin:/bin
+#
+password="${1}"
+static_phys_hosts_file="${2}"
+static_virt_hosts_file="${3}"
+#
+hack_dnsmasq_static_route_to_net_on_WAN=192.168.178.0/24
+#
+lease_time=$(( 60 * 60 * 60 ))
+#
+LANv4_class=172.16
+LANv4_net=${LANv4_class}.0.0
+LANv4_nm=16
+LANv6_class=fd00
+LANv6_net=${LANv6_class}:172:16
+LANv6_router_addr_short=::1
+LANv6_router_addr_full=${LANv6_net}${LANv6_router_addr_short}
+LANv6_nm=64
+router_hostname=erx
+domain=ubnt.lan
+#
+ALL_PORTS="eth0 eth1 eth2 eth3 eth4"
+SWITCH=switch0
+SWITCH_PORTS="eth1 eth2 eth3"
+#
+WAN_if=$SWITCH
+WAN_type=switch
+IF_WAN="${WAN_type} ${WAN_if}"
+#
+LAN_if=eth0
+LAN_type=ethernet
+IF_LAN="${LAN_type} ${LAN_if}"
+#
+user_datadir='/config/user-data'
+user_dnsmasq_conf="${user_datadir}/dnsmasq.conf"
+#
+__td=`mktemp -d`
+if test -z "${__td}"
+then
+  exit 1
+fi
+__exit() {
+rm -rf "${__td}"
+}
+
+trap __exit EXIT
+t_dns="${__td}/dns.conf"
+#
+configure() {
+  /opt/vyatta/sbin/vyatta-cfg-cmd-wrapper begin
+}
+delete() {
+  echo "delete $@"
+  /opt/vyatta/sbin/vyatta-cfg-cmd-wrapper delete "$@"
+}
+# set
+s () {
+  echo "set $@"
+  /opt/vyatta/sbin/vyatta-cfg-cmd-wrapper set "$@"
+}
+show () {
+  /opt/vyatta/sbin/vyatta-cfg-cmd-wrapper show
+}
+commit () {
+  /opt/vyatta/sbin/vyatta-cfg-cmd-wrapper commit "$@"
+}
+save () {
+  /opt/vyatta/sbin/vyatta-cfg-cmd-wrapper save "$@"
+}
+# exit
+e () {
+  /opt/vyatta/sbin/vyatta-cfg-cmd-wrapper end
+}
+
+declare -i a3=0
+declare -i a4=0
+_new_ip4 () {
+  local -i _a3=${a3}
+  local -i _a4=$(( ${a4} + 1 ))
+  if test "${_a4}" -gt 255
+  then
+    _a4=0
+    _a3=$(( ${_a3} + 1 ))
+  fi
+  if test "${_a3}" -gt 255
+  then
+    echo "${a3}.${a4} greater than ${LANv4_class}.255.255" >2&
+    return 1
+  fi
+  a3=${_a3}
+  a4=${_a4}
+  return 0
+}
+#
+_static_dnsmasq () {
+  local name=$1
+  local mac=$2
+  local ip4=$3
+  local ip6=$4
+  echo "host-record=${name},${name}.${domain},${ip4},${ip6}" >> "${t_dns}"
+  echo "dhcp-host=${mac},set:${name},${name},${lease_time}" >> "${t_dns}"
+}
+#
+_static_dns () {
+  local name=$1
+  local ip4=$2
+  local ip6=$3
+  s system static-host-mapping host-name ${name} alias ${name}.${domain}
+  s system static-host-mapping host-name ${name} inet ${ip4}
+  s system static-host-mapping host-name ${name} inet ${ip6}
+  echo "host-record=${name},${name}.${domain},${ip4},${ip6}" >> "${t_dns}"
+}
+#
+_static_router () {
+  local name=$1
+  local ip6=$2
+  local ip4
+
+  if test -z "${name}" || test -z "${ip6}"
+  then
+    echo "EMPTY: name: ${name} ip6: ${ip6}" >&2
+    exit 1
+  fi
+
+  if ! _new_ip4
+  then
+    return
+  fi
+  ip4=${LANv4_class}.${a3}.${a4}
+
+  LANv4_router=${ip4}
+
+  _static_dns ${name} ${ip4} ${ip6}
+}
+#
+_static_host () {
+  local mac=$1
+  local name=$2
+  local ip4
+  local ip6
+  local oIFS=$IFS
+
+  if test -z "${name}" || test -z "${mac}"
+  then
+    echo "EMPTY: name: ${name} mac: ${mac}" >&2
+    exit 1
+  fi
+
+  if ! _new_ip4
+  then
+    return
+  fi
+  ip4=${LANv4_class}.${a3}.${a4}
+
+  IFS=:
+  set -- ${mac}
+  m1=`printf %02x $(( 0x$1 ^ 2 ))`
+  m2=`printf %02x $(( 0x$2     ))`
+  m3=`printf %02x $(( 0x$3     ))`
+  m4=`printf %02x $(( 0x$4     ))`
+  m5=`printf %02x $(( 0x$5     ))`
+  m6=`printf %02x $(( 0x$6     ))`
+  m7=`printf %02x $(( 0x$7     ))`
+  IFS="${oIFS}"
+
+  ip6=${LANv6_net}::${m1}${m2}:${m3}ff:fe${m4}:${m5}${m6}
+
+  _static_dnsmasq ${name} ${mac} ${ip4} ${ip6}
+}
+#
+#
+configure
+#
+delete system
+s system options reboot-on-panic true
+
+s system time-zone UTC
+s system host-name ${router_hostname}
+s system domain-name ${domain}
+
+s system login user ubnt level admin
+s system login user ubnt authentication plaintext-password "${password}"
+
+s system ntp server pool.ntp.org
+
+_static_router ${router_hostname} ${LANv6_router_addr_full}
+s system ip override-hostname-ip ${LANv4_router}
+#
+delete service
+s service ssh port 22
+s service ssh protocol-version v2
+
+s service dns forwarding listen-on ${LAN_if}
+s service dns forwarding options domain=${domain},${LANv4_net}/${LANv4_nm},local
+s service dns forwarding options resolv-file=/etc/resolv.conf.dhclient-new-${WAN_if}
+s service dns forwarding options conf-file=${user_dnsmasq_conf}
+
+s service nat rule 5010 description "masquerade for WAN"
+s service nat rule 5010 outbound-interface ${WAN_if}
+s service nat rule 5010 type masquerade
+
+s service dhcp-server use-dnsmasq enable
+s service dhcp-server disabled false
+s service dhcp-server hostfile-update disable
+s service dhcp-server static-arp disable
+
+#
+for p in $ALL_PORTS
+do
+  delete interfaces ethernet ${p}
+  s interfaces ethernet ${p} disable
+done
+delete interfaces switch $SWITCH
+delete interfaces ${IF_WAN}
+#
+s interfaces loopback lo description "Loopback"
+s interfaces switch $SWITCH description "Switch"
+for sp in $SWITCH_PORTS
+do
+  delete interfaces ethernet ${sp}
+  s interfaces ethernet ${sp} description "Local, part of $SWITCH"
+  s interfaces switch $SWITCH switch-port interface ${sp}
+done
+
+s interfaces ${IF_WAN} description 'Internet'
+s interfaces ${IF_WAN} address dhcp
+
+s interfaces ${IF_WAN} dhcp-options name-server no-update
+
+s interfaces ${IF_WAN} ipv6 address autoconf
+s interfaces ${IF_WAN} ipv6 dup-addr-detect-transmits 1
+
+if true
+then
+s interfaces ${IF_WAN} dhcpv6-pd pd 44048 interface ${LAN_if} service slaac
+s interfaces ${IF_WAN} dhcpv6-pd pd 44048 interface ${LAN_if} host-address ${LANv6_router_addr_short}
+s interfaces ${IF_WAN} dhcpv6-pd pd 44048 interface ${LAN_if} no-dns
+s interfaces ${IF_WAN} dhcpv6-pd pd 44048 prefix-length /64
+s interfaces ${IF_WAN} dhcpv6-pd no-dns
+s interfaces ${IF_WAN} dhcpv6-pd prefix-only
+s interfaces ${IF_WAN} dhcpv6-pd rapid-commit enable
+fi
+
+delete interfaces ${IF_LAN}
+s interfaces ${IF_LAN} description "Local"
+s interfaces ${IF_LAN} address ${LANv4_router}/${LANv4_nm}
+s interfaces ${IF_LAN} address ${LANv6_router_addr_full}/${LANv6_nm}
+
+_static_host 01:23:45:ab:cd:ef hostname
+
+echo "looking for phys hosts '${static_phys_hosts_file}'"
+if test -f "${static_phys_hosts_file}"
+then
+  echo "sourcing '${static_phys_hosts_file}'"
+  source "${static_phys_hosts_file}"
+fi
+
+echo "looking for virt hosts '${static_virt_hosts_file}'"
+if test -f "${static_virt_hosts_file}"
+then
+  echo "sourcing '${static_virt_hosts_file}'"
+  source "${static_virt_hosts_file}"
+fi
+
+tee -a "${t_dns}" <<_EOF_
+
+interface=${LAN_if}
+no-dhcp-interface=${WAN_if}
+domain-needed
+no-hosts
+#no-resolv
+#log-queries=extra
+#log-dhcp
+log-async=2345
+
+localmx
+
+dhcp-leasefile=/tmp/dnsmasq.leases
+dhcp-authoritative
+dhcp-range=${LANv4_class}.42.42,${LANv4_class}.255.255,${lease_time}
+dhcp-range=::,constructor:${LAN_if},slaac,ra-names,${lease_time}
+enable-ra
+dhcp-option=option:classless-static-route,${hack_dnsmasq_static_route_to_net_on_WAN},${LANv4_class}.0.1,0.0.0.0/0,${LANv4_class}.0.1
+
+_EOF_
+if test -f "${t_dns}"
+then
+  sudo mv -f "${t_dns}" "${user_dnsmasq_conf}"
+fi
+
+tee ~/forward.sh <<_EOS_
+#!/bin/bash
+set -x
+set -e
+ip a | grep -w 2001
+time nc -l -p 1234 | nc \"\$1\" 12345
+_EOS_
+show
+commit
+save
+e
+
