@@ -8,6 +8,7 @@ export PATH=/usr/sbin:/sbin:/usr/bin:/bin
 password="${1}"
 static_phys_hosts_file="${2}"
 static_virt_hosts_file="${3}"
+tftp_server="${4}"
 #
 hack_dnsmasq_static_route_to_net_on_WAN=192.168.178.0/24
 #
@@ -286,7 +287,14 @@ dhcp-range=${LANv4_class}.42.42,${LANv4_class}.255.255,${lease_time}
 dhcp-range=::,constructor:${LAN_if},slaac,ra-names,${lease_time}
 enable-ra
 dhcp-option=option:classless-static-route,${hack_dnsmasq_static_route_to_net_on_WAN},${LANv4_class}.0.1,0.0.0.0/0,${LANv4_class}.0.1
+_EOF_
 
+test -n "${tftp_server}" && tee -a "${t_dns}" <<_EOF_
+
+dhcp-vendorclass=set:x86PC,PXEClient:Arch:00000
+dhcp-vendorclass=set:X86-64_EFI,PXEClient:Arch:00007
+dhcp-boot=tag:x86PC,i386-pc/core.0,${tftp_server},${tftp_server}
+dhcp-boot=tag:X86-64_EFI,x86_64-efi/core.efi,${tftp_server},${tftp_server}
 _EOF_
 if test -f "${t_dns}"
 then
