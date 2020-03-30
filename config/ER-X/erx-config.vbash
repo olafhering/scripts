@@ -23,7 +23,7 @@ LANv6_router_addr_short=::1
 LANv6_router_addr_full=${LANv6_net}${LANv6_router_addr_short}
 LANv6_nm=64
 router_hostname=erx
-domain=ubnt.lan
+domain='home.arpa'
 #
 ALL_PORTS="eth0 eth1 eth2 eth3 eth4"
 SWITCH=switch0
