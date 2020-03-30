@@ -186,6 +186,8 @@ s system domain-name ${domain}
 
 s system login user ubnt level admin
 s system login user ubnt authentication plaintext-password "${password}"
+s system login user ubnt authentication public-keys 'olaf@aepfle.de' 'key' 'AAAAC3NzaC1lZDI1NTE5AAAAIPQJsXDm6J5iQCPv3BbUyjn54DtFmqpT3KynRD6m2GVo'
+s system login user ubnt authentication public-keys 'olaf@aepfle.de' 'type' 'ssh-ed25519'
 
 s system ntp server pool.ntp.org
 
