@@ -207,11 +207,6 @@ s service nat rule 5010 description "masquerade for WAN"
 s service nat rule 5010 outbound-interface ${WAN_if}
 s service nat rule 5010 type masquerade
 
-# service dhcp-server use-dnsmasq enable
-# service dhcp-server disabled false
-# service dhcp-server hostfile-update disable
-# service dhcp-server static-arp disable
-
 #
 for p in $ALL_PORTS
 do
