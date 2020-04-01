@@ -287,11 +287,13 @@ dhcp-option=option:classless-static-route,${hack_dnsmasq_static_route_to_net_on_
 _EOF_
 
 test -n "${tftp_server}" && tee -a "${t_dns}" <<_EOF_
-
+# grub2-mknetdir --help
+tftp-root=/config/user-data/tftpboot
+enable-tftp
 dhcp-vendorclass=set:x86PC,PXEClient:Arch:00000
 dhcp-vendorclass=set:X86-64_EFI,PXEClient:Arch:00007
-dhcp-boot=tag:x86PC,i386-pc/core.0,${tftp_server},${tftp_server}
-dhcp-boot=tag:X86-64_EFI,x86_64-efi/core.efi,${tftp_server},${tftp_server}
+dhcp-boot=tag:x86PC,i386-pc/core.0
+dhcp-boot=tag:X86-64_EFI,x86_64-efi/core.efi
 _EOF_
 if test -f "${t_dns}"
 then
