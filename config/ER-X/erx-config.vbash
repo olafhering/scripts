@@ -184,6 +184,8 @@ s system time-zone UTC
 s system host-name ${router_hostname}
 s system domain-name ${domain}
 
+s system login banner post-login ""
+s system login banner pre-login ""
 s system login user ubnt level admin
 s system login user ubnt authentication plaintext-password "${password}"
 s system login user ubnt authentication public-keys 'olaf@aepfle.de' 'key' 'AAAAC3NzaC1lZDI1NTE5AAAAIPQJsXDm6J5iQCPv3BbUyjn54DtFmqpT3KynRD6m2GVo'
