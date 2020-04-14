@@ -205,7 +205,7 @@ s service dns forwarding options domain=${domain},${LANv4_net}/${LANv4_nm},local
 s service dns forwarding options resolv-file=/etc/resolv.conf.dhclient-new-${UPLINK_if}
 s service dns forwarding options conf-file=${user_dnsmasq_conf}
 
-s service nat rule 5010 description "masquerade for WAN"
+s service nat rule 5010 description "masquerade for UPLINK"
 s service nat rule 5010 outbound-interface ${UPLINK_if}
 s service nat rule 5010 type masquerade
 
