@@ -29,9 +29,9 @@ ALL_PORTS="eth0 eth1 eth2 eth3 eth4"
 SWITCH=switch0
 SWITCH_PORTS="eth1 eth2 eth3"
 #
-WAN_if=$SWITCH
+UPLINK_if=$SWITCH
 WAN_type=switch
-IF_UPLINK="${WAN_type} ${WAN_if}"
+IF_UPLINK="${WAN_type} ${UPLINK_if}"
 #
 LAN_if=eth0
 LAN_type=ethernet
@@ -202,11 +202,11 @@ s service ssh protocol-version v2
 
 s service dns forwarding listen-on ${LAN_if}
 s service dns forwarding options domain=${domain},${LANv4_net}/${LANv4_nm},local
-s service dns forwarding options resolv-file=/etc/resolv.conf.dhclient-new-${WAN_if}
+s service dns forwarding options resolv-file=/etc/resolv.conf.dhclient-new-${UPLINK_if}
 s service dns forwarding options conf-file=${user_dnsmasq_conf}
 
 s service nat rule 5010 description "masquerade for WAN"
-s service nat rule 5010 outbound-interface ${WAN_if}
+s service nat rule 5010 outbound-interface ${UPLINK_if}
 s service nat rule 5010 type masquerade
 
 #
@@ -270,7 +270,7 @@ fi
 tee -a "${t_dns}" <<_EOF_
 
 interface=${LAN_if}
-no-dhcp-interface=${WAN_if}
+no-dhcp-interface=${UPLINK_if}
 domain-needed
 no-hosts
 #no-resolv
