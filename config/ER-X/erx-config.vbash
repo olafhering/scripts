@@ -10,7 +10,7 @@ static_phys_hosts_file="${2}"
 static_virt_hosts_file="${3}"
 tftp_server="${4}"
 #
-hack_dnsmasq_static_route_to_net_on_WAN=192.168.178.0/24
+hack_dnsmasq_static_route_to_net_on_UPLINK=192.168.178.0/24
 #
 lease_time=$(( 60 * 60 * 60 ))
 #
@@ -284,7 +284,7 @@ dhcp-authoritative
 dhcp-range=${LANv4_class}.42.42,${LANv4_class}.255.255,${lease_time}
 dhcp-range=::,constructor:${LAN_if},slaac,ra-names,${lease_time}
 enable-ra
-dhcp-option=option:classless-static-route,${hack_dnsmasq_static_route_to_net_on_WAN},${LANv4_class}.0.1,0.0.0.0/0,${LANv4_class}.0.1
+dhcp-option=option:classless-static-route,${hack_dnsmasq_static_route_to_net_on_UPLINK},${LANv4_class}.0.1,0.0.0.0/0,${LANv4_class}.0.1
 _EOF_
 
 test -n "${tftp_server}" && tee -a "${t_dns}" <<_EOF_
