@@ -30,8 +30,8 @@ SWITCH=switch0
 SWITCH_PORTS="eth1 eth2 eth3"
 #
 UPLINK_if=$SWITCH
-WAN_type=switch
-IF_UPLINK="${WAN_type} ${UPLINK_if}"
+UPLINK_type=switch
+IF_UPLINK="${UPLINK_type} ${UPLINK_if}"
 #
 LAN_if=eth0
 LAN_type=ethernet
