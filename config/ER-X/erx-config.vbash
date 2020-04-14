@@ -306,7 +306,7 @@ tee ~/forward.sh <<_EOS_
 set -x
 set -e
 ip a | grep -w 2001
-time nc -l -p 1234 | nc \"\$1\" 12345
+time nc -l -p 1234 | nc "\$1" 12345
 _EOS_
 show
 commit
