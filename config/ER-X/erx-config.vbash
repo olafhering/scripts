@@ -31,7 +31,7 @@ SWITCH_PORTS="eth1 eth2 eth3"
 #
 WAN_if=$SWITCH
 WAN_type=switch
-IF_WAN="${WAN_type} ${WAN_if}"
+IF_UPLINK="${WAN_type} ${WAN_if}"
 #
 LAN_if=eth0
 LAN_type=ethernet
@@ -216,7 +216,7 @@ do
   s interfaces ethernet ${p} disable
 done
 delete interfaces switch $SWITCH
-delete interfaces ${IF_WAN}
+delete interfaces ${IF_UPLINK}
 #
 s interfaces loopback lo description "Loopback"
 s interfaces switch $SWITCH description "Switch"
@@ -227,23 +227,23 @@ do
   s interfaces switch $SWITCH switch-port interface ${sp}
 done
 
-s interfaces ${IF_WAN} description 'Internet'
-s interfaces ${IF_WAN} address dhcp
+s interfaces ${IF_UPLINK} description 'Internet'
+s interfaces ${IF_UPLINK} address dhcp
 
-s interfaces ${IF_WAN} dhcp-options name-server no-update
+s interfaces ${IF_UPLINK} dhcp-options name-server no-update
 
-s interfaces ${IF_WAN} ipv6 address autoconf
-s interfaces ${IF_WAN} ipv6 dup-addr-detect-transmits 1
+s interfaces ${IF_UPLINK} ipv6 address autoconf
+s interfaces ${IF_UPLINK} ipv6 dup-addr-detect-transmits 1
 
 if true
 then
-s interfaces ${IF_WAN} dhcpv6-pd pd 44048 interface ${LAN_if} service slaac
-s interfaces ${IF_WAN} dhcpv6-pd pd 44048 interface ${LAN_if} host-address ${LANv6_router_addr_short}
-s interfaces ${IF_WAN} dhcpv6-pd pd 44048 interface ${LAN_if} no-dns
-s interfaces ${IF_WAN} dhcpv6-pd pd 44048 prefix-length /64
-s interfaces ${IF_WAN} dhcpv6-pd no-dns
-s interfaces ${IF_WAN} dhcpv6-pd prefix-only
-s interfaces ${IF_WAN} dhcpv6-pd rapid-commit enable
+s interfaces ${IF_UPLINK} dhcpv6-pd pd 44048 interface ${LAN_if} service slaac
+s interfaces ${IF_UPLINK} dhcpv6-pd pd 44048 interface ${LAN_if} host-address ${LANv6_router_addr_short}
+s interfaces ${IF_UPLINK} dhcpv6-pd pd 44048 interface ${LAN_if} no-dns
+s interfaces ${IF_UPLINK} dhcpv6-pd pd 44048 prefix-length /64
+s interfaces ${IF_UPLINK} dhcpv6-pd no-dns
+s interfaces ${IF_UPLINK} dhcpv6-pd prefix-only
+s interfaces ${IF_UPLINK} dhcpv6-pd rapid-commit enable
 fi
 
 delete interfaces ${IF_LAN}
