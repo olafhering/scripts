@@ -219,15 +219,14 @@ delete interfaces switch $SWITCH
 delete interfaces ${IF_UPLINK}
 #
 s interfaces loopback lo description "Loopback"
-s interfaces switch $SWITCH description "Switch"
 for sp in $SWITCH_PORTS
 do
   delete interfaces ethernet ${sp}
   s interfaces ethernet ${sp} description "Local, part of $SWITCH"
-  s interfaces switch $SWITCH switch-port interface ${sp}
+  s interfaces ${IF_UPLINK} switch-port interface ${sp}
 done
 
-s interfaces ${IF_UPLINK} description 'Internet'
+s interfaces ${IF_UPLINK} description 'Uplink'
 s interfaces ${IF_UPLINK} address dhcp
 
 s interfaces ${IF_UPLINK} dhcp-options name-server no-update
