@@ -249,6 +249,7 @@ delete interfaces ${IF_LAN}
 s interfaces ${IF_LAN} description "Local"
 s interfaces ${IF_LAN} address ${LANv4_router}/${LANv4_nm}
 s interfaces ${IF_LAN} address ${LANv6_router_addr_full}/${LANv6_nm}
+s interfaces ${IF_LAN} ipv6 router-advert send-advert false
 
 _static_host 01:23:45:ab:cd:ef hostname
 
