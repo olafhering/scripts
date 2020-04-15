@@ -282,7 +282,7 @@ localmx
 dhcp-leasefile=/tmp/dnsmasq.leases
 dhcp-authoritative
 dhcp-range=${LANv4_class}.42.42,${LANv4_class}.255.255,${lease_time}
-dhcp-range=::,constructor:${LAN_if},slaac,ra-names,64,${lease_time}
+dhcp-range=::,constructor:${LAN_if},slaac,ra-names,64,123
 enable-ra
 dhcp-option=option:classless-static-route,${hack_dnsmasq_static_route_to_net_on_UPLINK},${LANv4_class}.0.1,0.0.0.0/0,${LANv4_class}.0.1
 _EOF_
