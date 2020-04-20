@@ -10,6 +10,8 @@ static_phys_hosts_file="${2}"
 static_virt_hosts_file="${3}"
 tftp_server="${4}"
 #
+debian_distribution='wheezy'
+#
 hack_dnsmasq_static_route_to_net_on_UPLINK=192.168.178.0/24
 #
 lease_time=$(( 60 * 60 * 60 ))
@@ -39,6 +41,7 @@ IF_LAN="${LAN_type} ${LAN_if}"
 #
 user_datadir='/config/user-data'
 user_dnsmasq_conf="${user_datadir}/dnsmasq.conf"
+user_crontab_prefix_sh="${user_datadir}/cron-prefix.sh"
 #
 __td=`mktemp -d`
 if test -z "${__td}"
@@ -184,6 +187,14 @@ s system time-zone UTC
 s system host-name ${router_hostname}
 s system domain-name ${domain}
 
+s system package repository ${debian_distribution} components main
+s system package repository ${debian_distribution} distribution ${debian_distribution}
+s system package repository ${debian_distribution} url http://archive.debian.org/debian
+
+s system task-scheduler task x executable path "/bin/bash"
+s system task-scheduler task x executable arguments "${user_crontab_prefix_sh}"
+s system task-scheduler task x interval 1m
+
 s system login banner post-login ""
 s system login banner pre-login ""
 s system login user ubnt level admin
@@ -308,6 +319,29 @@ set -x
 set -e
 ip a | grep -w 2001
 time nc -l -p 1234 | nc "\$1" 12345
+_EOS_
+tee "${user_crontab_prefix_sh}" <<_EOS_
+#!/bin/bash
+set -e
+read LAN < <(ip -6 --oneline address show dev '${LAN_if}'    -deprecated | mawk '/inet6 2001:/{ a=\$4;gsub("/.*$", "/56",a) ; print a }' | xargs sipcalc -6 | grep '^Subnet prefix')
+read UPL < <(ip -6 --oneline address show dev '${UPLINK_if}' -deprecated | mawk '/inet6 2001:/{ a=\$4;gsub("/.*$", "/56",a) ; print a }' | xargs sipcalc -6 | grep '^Subnet prefix')
+if test -n "\${LAN}" && test -n "\${UPL}"
+then
+  if test "\${LAN}" = "\${UPL}"
+  then
+    : equal
+  else
+    if /opt/vyatta/sbin/dhcpv6-pd-client.pl --ifname=${UPLINK_if} --renew
+    then
+       silly=\$?
+    else
+       silly=\$?
+    fi
+    echo "UPDATE: \$0: LAN '\${LAN}' UPLINK '\${UPL}': \$silly" | logger
+  fi
+else
+  echo "ERROR: \$0: LAN '\${LAN}' UPLINK '\${UPL}'" | logger
+fi
 _EOS_
 show
 commit
