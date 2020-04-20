@@ -344,10 +344,10 @@ then
     else
        silly=\$?
     fi
-    echo "UPDATE: \$0: LAN '\${LAN}' UPLINK '\${UPL}': \$silly" | logger
+    echo "UPDATE: '\${LAN}' -> '\${UPL}': \$silly" | logger -t "\$0"
   fi
 else
-  echo "ERROR: \$0: LAN '\${LAN}' UPLINK '\${UPL}'" | logger
+  echo "ERROR: UPLINK '\${UPL}' LAN '\${LAN}'" | logger -t "\$0"
 fi
 _EOS_
 show
