@@ -323,8 +323,15 @@ _EOS_
 tee "${user_crontab_prefix_sh}" <<_EOS_
 #!/bin/bash
 set -e
-read LAN < <(ip -6 --oneline address show dev '${LAN_if}'    -deprecated | mawk '/inet6 2001:/{ a=\$4;gsub("/.*$", "/56",a) ; print a }' | xargs sipcalc -6 | grep '^Subnet prefix')
-read UPL < <(ip -6 --oneline address show dev '${UPLINK_if}' -deprecated | mawk '/inet6 2001:/{ a=\$4;gsub("/.*$", "/56",a) ; print a }' | xargs sipcalc -6 | grep '^Subnet prefix')
+pfx() {
+  local i="\$1"
+  ip -6 --oneline address show dev "\${i}" -deprecated |
+  mawk '/inet6 2001:/{ a=\$4 ; gsub("/.*$", "/56",a) ; print a }' |
+  xargs sipcalc -6 |
+  mawk '/^Subnet prefix/{ print \$5 }'
+}
+read LAN < <( pfx '${LAN_if}' )
+read UPL < <( pfx '${UPLINK_if}' )
 if test -n "\${LAN}" && test -n "\${UPL}"
 then
   if test "\${LAN}" = "\${UPL}"
