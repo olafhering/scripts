@@ -42,7 +42,6 @@ IF_LAN="${LAN_type} ${LAN_if}"
 user_datadir='/config/user-data'
 post_config_dir='/config/scripts/post-config.d'
 user_dnsmasq_conf="${user_datadir}/dnsmasq.conf"
-user_crontab_prefix_sh="${user_datadir}/cron-prefix.sh"
 post_config_prefix_sh="${post_config_dir}/post-config-prefix.sh"
 check_prefix_sh="${user_datadir}/check-prefix.sh"
 #
@@ -194,10 +193,6 @@ s system package repository ${debian_distribution} components main
 s system package repository ${debian_distribution} distribution ${debian_distribution}
 s system package repository ${debian_distribution} url http://archive.debian.org/debian
 
-s system task-scheduler task x executable path "/bin/bash"
-s system task-scheduler task x executable arguments "${user_crontab_prefix_sh}"
-s system task-scheduler task x interval 1m
-
 s system login banner post-login ""
 s system login banner pre-login ""
 s system login user ubnt level admin
@@ -323,10 +318,6 @@ set -x
 set -e
 ip a | grep -w 2001
 time nc -l -p 1234 | nc "\$1" 12345
-_EOS_
-tee "${user_crontab_prefix_sh}" <<_EOS_
-#!/bin/bash
-bash '${check_prefix_sh}'
 _EOS_
 tee "${check_prefix_sh}" <<_EOS_
 #!/bin/bash
