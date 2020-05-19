@@ -109,8 +109,8 @@ def lese_vcf(path):
 							print("Info: Landesvorwahl ...:", val, vcard)
 					# translate international call prefix
 					elif val.startswith('00'):
-						print("Info: Führende 00 tel:", val, landesvorwahl + val[2:], vcard)
-						val = landesvorwahl + val[2:]
+						print("Info: Führende 00 tel:", val, val[2:], vcard)
+						val = val[2:]
 					# translate national call prefix
 					elif val.startswith('0'):
 						print("Info: Führende 0 tel:", val, landesvorwahl + val[1:], vcard)
@@ -136,31 +136,91 @@ def lese_vcf(path):
 					telefonbuch[tel] = names
 
 			else:
-#				print("incomplete", vcard)
-				pass
+				if False:
+					print("incomplete", vcard)
+
+def schreibe_vcf(output_path):
+	vcs = []
+	nummern = list(telefonbuch.keys())
+	for tel in sorted(nummern):
+		vc = vobject.vCard()
+# <FN{'CHARSET': ['UTF-8']}Möchte ein Ü kaufen>
+# Wo ist das ENCODING ?!
+		vc.add('fn').value  = telefonbuch[tel][0]
+		vc.add('tel').value = "+" + tel
+		vcs.append(vc)
+	with open(output_path, 'w', newline='') as f:
+		for vc in vcs:
+			f.write(vc.serialize())
+
+
+def lese_verzeichnis(input_path):
+	for tel in os.scandir(input_path):
+		fns = []
+		if not tel.is_dir():
+			print(tel.path, "is not a directory", file=sys.stderr)
+			sys.exit(1)
+		if not tel.name.isdigit():
+			print(tel.path, "is not a phone number", file=sys.stderr)
+			sys.exit(1)
+		for fn in os.scandir(tel.path):
+			if not fn.is_file():
+				print(fn.path, "is not a full name", file=sys.stderr)
+				sys.exit(1)
+			fns.append(fn.name.replace('|', '/'))
+		if not len(fns):
+			print(tel.path, "no entry for full name", file=sys.stderr)
+			sys.exit(1)
+		telefonbuch[tel.name] = fns
+		
+
+def vcf_nach_verzeichnis(input_path, output_path):
+	if os.path.exists(output_path) and not os.path.isdir(output_path):
+		print(output_path, "is not a directory", file=sys.stderr)
+		sys.exit(1)
+
+	print("android-contacts.vcf ist '%s'" % input_path)
+	print("Telefonbuch Verzeichnis ist '%s'" % output_path)
+
+	lese_vcf(input_path)
+	if len(telefonbuch) > 0:
+		schreibe_verzeichnis(output_path)
+	print(len(telefonbuch), "Nummern")
+
+
+def verzeichnis_nach_vcf(input_path, output_path):
+	if os.path.exists(output_path) and not os.path.isfile(output_path):
+		print(output_path, "is not a file", file=sys.stderr)
+		sys.exit(1)
+
+	print("Telefonbuch Verzeichnis ist '%s'" % input_path)
+	print("android-contacts.vcf ist '%s'" % output_path)
+
+	lese_verzeichnis(input_path)
+	if len(telefonbuch) > 0:
+		schreibe_vcf(output_path)
+	print(len(telefonbuch), "Nummern")
+
 
 def main(argv):
 	if sys.hexversion < 0x03050000:
 		parser = argparse.ArgumentParser()
 	else:
 		parser = argparse.ArgumentParser(allow_abbrev=False)
-	parser.add_argument("-i", metavar="contacts.vcf", help="input file", required=True)
-	parser.add_argument("-o", metavar="/target/directory", help="output dir", required=True)
+	parser.add_argument("-i", metavar="contacts.vcf or /target/directory", help="input file, or output directory", required=True)
+	parser.add_argument("-o", metavar="/target/directory, or contacts.vcf", help="output dir, or input file", required=True)
 	args, unknown = parser.parse_known_args()
 	if len(unknown) > 0:
 		print("unknown arguments:", unknown)
 		parser.print_help()
 		sys.exit(1)
 
-	inputfile = args.i
-	outputdir = args.o
-	print("android-contacts.vcf ist '%s'" % inputfile)
-	print("Telefonbuch Verzeichnis ist '%s'" % outputdir)
-
-	lese_vcf(inputfile)
-	if len(telefonbuch) > 0:
-		schreibe_verzeichnis(outputdir)
-	print(len(telefonbuch), "Nummern")
+	input_path = args.i
+	output_path = args.o
+	if os.path.isfile(input_path):
+		vcf_nach_verzeichnis(input_path, output_path)
+	elif os.path.isdir(input_path):
+		verzeichnis_nach_vcf(input_path, output_path)
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
