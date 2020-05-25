@@ -3,6 +3,8 @@ set -x
 test -n "${LAN}" && unset LANG
 test -n "${!LC_*}" && unset ${!LC_*}
 set +x
+mode=
+target=
 declare -a x_tech
 declare -a x_bitw
 declare -a x_dist
@@ -123,6 +125,12 @@ fn_print() {
 		xl)
 			printf "%s=vif=[ 'mac=%02x:%02x:%02x:%02x:%02x:%02x,bridge=br0,type=netfront', ]\\n" "${name}" ${m6} ${m5} ${m4} ${m3} ${m2} ${m1}
 		;;
+		host_to_mac)
+			if test "${name}" = "${target}"
+			then
+				printf '%02x:%02x:%02x:%02x:%02x:%02x\n' "${m6}" "${m5}" "${m4}" "${m3}" "${m2}" "${m1}"
+			fi
+		;;
 		*)
 		;;
 	esac
@@ -194,7 +202,8 @@ fn_sles() {
 case "$1" in
 	--xl) mode=xl ;;
 	--erx) mode=erx ;;
-	*) echo "Usage: $0 [--xl|--erx]" >&2 ; exit 0 ;;
+	--mac) mode=host_to_mac ; target=$2 ;;
+	*) echo "Usage: $0 [--xl|--erx|--mac]" >&2 ; exit 0 ;;
 esac
 tech=0
 while test ${tech} -lt ${#x_tech[@]}
