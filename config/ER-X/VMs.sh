@@ -131,6 +131,9 @@ fn_print() {
 				printf '%02x:%02x:%02x:%02x:%02x:%02x\n' "${m6}" "${m5}" "${m4}" "${m3}" "${m2}" "${m1}"
 			fi
 		;;
+		list)
+			echo "${name}"
+		;;
 		*)
 		;;
 	esac
@@ -203,7 +206,9 @@ case "$1" in
 	--xl) mode=xl ;;
 	--erx) mode=erx ;;
 	--mac) mode=host_to_mac ; target=$2 ;;
-	*) echo "Usage: $0 [--xl|--erx|--mac]" >&2 ; exit 0 ;;
+	--list) mode=list ;;
+	-l) mode=list ;;
+	*) echo "Usage: $0 [--xl|--erx|--mac|--list]" >&2 ; exit 0 ;;
 esac
 tech=0
 while test ${tech} -lt ${#x_tech[@]}
