@@ -1,8 +1,6 @@
 #!/bin/bash
-set -x
-test -n "${LAN}" && unset LANG
-test -n "${!LC_*}" && unset ${!LC_*}
-set +x
+unset LANG
+unset ${!LC_*}
 mode=
 target=
 declare -a x_tech
