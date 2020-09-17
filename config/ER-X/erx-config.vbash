@@ -108,8 +108,18 @@ _static_dnsmasq () {
   local mac=$2
   local ip4=$3
   local ip6=$4
+  local cnames=$5
+  local cname=
   echo "host-record=${name},${name}.${domain},${ip4},${ip6}" >> "${t_dns}"
   echo "dhcp-host=${mac},set:${name},${name},${lease_time}" >> "${t_dns}"
+  if test -n "${cnames}"
+  then
+    for cname in ${cnames}
+    do
+      echo "cname=${cname},${name}" >> "${t_dns}"
+      echo "cname=${cname}.${domain},${name}.${domain}" >> "${t_dns}"
+    done
+  fi
 }
 #
 _static_dns () {
@@ -147,6 +157,7 @@ _static_router () {
 _static_host () {
   local mac=$1
   local name=$2
+  local cnames=
   local ip4
   local ip6
   local oIFS=$IFS
@@ -156,6 +167,9 @@ _static_host () {
     echo "EMPTY: name: ${name} mac: ${mac}" >&2
     exit 1
   fi
+  shift
+  shift
+  cnames="$@"
 
   if ! _new_ip4
   then
@@ -176,7 +190,7 @@ _static_host () {
 
   ip6=${LANv6_net}::${m1}${m2}:${m3}ff:fe${m4}:${m5}${m6}
 
-  _static_dnsmasq ${name} ${mac} ${ip4} ${ip6}
+  _static_dnsmasq "${name}" "${mac}" "${ip4}" "${ip6}" "${cnames}"
 }
 #
 #
@@ -260,7 +274,7 @@ s interfaces ${IF_LAN} address ${LANv4_router}/${LANv4_nm}
 s interfaces ${IF_LAN} address ${LANv6_router_addr_full}/${LANv6_nm}
 s interfaces ${IF_LAN} ipv6 router-advert send-advert false
 
-_static_host 01:23:45:ab:cd:ef hostname
+_static_host 01:23:45:ab:cd:ef hostname cname1 cname2
 
 echo "looking for phys hosts '${static_phys_hosts_file}'"
 if test -f "${static_phys_hosts_file}"
