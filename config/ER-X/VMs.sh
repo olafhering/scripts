@@ -4,7 +4,6 @@ unset ${!LC_*}
 mode=
 target=
 declare -a x_tech
-declare -a x_bitw
 declare -a x_dist
 declare -a x_opensuse_ver
 declare -a x_sle_ver
@@ -21,10 +20,6 @@ x_tech=(
 	ph
 )
 w_bitw=1
-x_bitw=(
-	x64
-)
-#	x86
 w_dist=1
 x_dist=(
 	opensuse
@@ -67,8 +62,6 @@ i_sp=
 str_dist=
 i_dist=
 i_dist_variant=
-str_bitw=
-i_bitw=
 str_type=
 i_type=
 
@@ -87,8 +80,6 @@ fn_print() {
 	mac=$(( ${mac} | ( ${i_dist} << ${shift} ) ))
 	shift=$(( ${shift} + 4 ))
 	mac=$(( ${mac} | ( ${i_dist_variant} << ${shift} ) ))
-	shift=$(( ${shift} + 4 ))
-	mac=$(( ${mac} | ( ${i_bitw} << ${shift} ) ))
 	shift=$(( ${shift} + 4 ))
 	mac=$(( ${mac} | ( ${i_tech} << ${shift} ) ))
 	shift=$(( ${shift} + 4 ))
@@ -114,8 +105,8 @@ fn_print() {
 	m6=$(( ( ${mac} >> ${shift} ) & 0xff ))
 	shift=$(( ${shift} + 8 ))
 	#
-	#rintf '%-42s %02x:%02x:%02x:%02x:%02x:%02x %012x\n' "${str_tech}-${str_bitw}-${str_dist}-${str_sp}-${str_type}" ${m6} ${m5} ${m4} ${m3} ${m2} ${m1} ${mac}
-	name="${str_tech}-${str_bitw}-${str_dist}${str_sp}-${str_type}"
+	#rintf '%-42s %02x:%02x:%02x:%02x:%02x:%02x %012x\n' "${str_tech}-${str_dist}-${str_sp}-${str_type}" ${m6} ${m5} ${m4} ${m3} ${m2} ${m1} ${mac}
+	name="${str_tech}-${str_dist}${str_sp}-${str_type}"
 	case "$mode" in
 		erx)
 			printf '_static_host %02x:%02x:%02x:%02x:%02x:%02x %s\n' ${m6} ${m5} ${m4} ${m3} ${m2} ${m1} "${name}"
@@ -137,18 +128,6 @@ fn_print() {
 	esac
 }
 
-fn_bitw() {
-	local bitw=0
-
-	while test $bitw -lt ${#x_bitw[@]}
-	do
-		str_bitw=${x_bitw[${bitw}]}
-		i_bitw=${bitw}
-		fn_print
-		: $(( bitw++ ))
-	done
-}
-
 fn_type() {
 	local type=0
 
@@ -157,7 +136,7 @@ fn_type() {
 		str_type=${x_type[${type}]}
 		i_type=${type}
 
-		fn_bitw
+		fn_print
 		: $(( type++ ))
 	done
 }
