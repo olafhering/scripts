@@ -112,7 +112,7 @@ _static_dnsmasq () {
   local cnames=$5
   local cname=
   echo "host-record=${name}.${domain},${ip4},${ip6},${host_record_ttl}" >> "${t_dns}"
-  echo "dhcp-host=${mac},set:${name},${name}.${domain},${lease_time}" >> "${t_dns}"
+  echo "dhcp-host=${mac},id:*,set:${name},${ip4},${name},${lease_time}" >> "${t_dns}"
   if test -n "${cnames}"
   then
     for cname in ${cnames}
