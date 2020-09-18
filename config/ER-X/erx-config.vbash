@@ -15,6 +15,7 @@ debian_distribution='wheezy'
 hack_dnsmasq_static_route_to_net_on_UPLINK=192.168.178.0/24
 #
 lease_time=$(( 60 * 60 * 60 ))
+host_record_ttl=123
 #
 LANv4_class=172.16
 LANv4_net=${LANv4_class}.0.0
@@ -110,13 +111,13 @@ _static_dnsmasq () {
   local ip6=$4
   local cnames=$5
   local cname=
-  echo "host-record=${name},${name}.${domain},${ip4},${ip6}" >> "${t_dns}"
+  echo "host-record=${name}.${domain},${ip4},${ip6},${host_record_ttl}" >> "${t_dns}"
   echo "dhcp-host=${mac},set:${name},${name},${lease_time}" >> "${t_dns}"
   if test -n "${cnames}"
   then
     for cname in ${cnames}
     do
-      echo "cname=${cname},${name}" >> "${t_dns}"
+      echo "cname=${cname},${name}.${domain}" >> "${t_dns}"
       echo "cname=${cname}.${domain},${name}.${domain}" >> "${t_dns}"
     done
   fi
@@ -129,7 +130,7 @@ _static_dns () {
   s system static-host-mapping host-name ${name} alias ${name}.${domain}
   s system static-host-mapping host-name ${name} inet ${ip4}
   s system static-host-mapping host-name ${name} inet ${ip6}
-  echo "host-record=${name},${name}.${domain},${ip4},${ip6}" >> "${t_dns}"
+  echo "host-record=${name}.${domain},${ip4},${ip6},${host_record_ttl}" >> "${t_dns}"
 }
 #
 _static_router () {
