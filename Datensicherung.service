@@ -1,0 +1,14 @@
+# vim: syntax=systemd
+[Unit]
+Description=Datensicherung
+ConditionKernelCommandLine=!Datensicherung=nein
+After=network-online.target
+After=time-sync.target
+
+[Service]
+ExecStart=/usr/bin/systemd-inhibit --mode=block '--who=/usr/lib/Datensicherung.sh' '--why=Isso' /usr/lib/Datensicherung.sh
+IOSchedulingClass=idle
+CPUSchedulingPolicy=batch
+
+[Install]
+WantedBy=multi-user.target
