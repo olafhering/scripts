@@ -22,6 +22,7 @@ Release:        0
 Summary:        Daten sicher kopieren
 License:        GPL-2.0-only
 URL:            https://github.com/olafhering/scripts/tree/Datensicherung
+BuildRequires:  systemd-rpm-macros
 %{?systemd_requires}
 Requires:       chrony
 Requires:       kbd
