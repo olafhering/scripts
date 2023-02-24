@@ -102,4 +102,4 @@ _EOF_
 	chvt 1
 	systemctl --no-pager poweroff
 	exit 0
-) 2>&1 | tee /dev/tty8
+) |& tee /dev/tty8
