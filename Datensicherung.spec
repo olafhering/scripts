@@ -47,6 +47,7 @@ sed -i~ '
 s@/usr/lib/Datensicherung.sh@%_libexecdir/%name.sh@g
 ' Datensicherung.service
 diff -u "$_"~ "$_" && : gleich
+exit 0
 
 %install
 mkdir -p %buildroot%_libexecdir
