@@ -42,12 +42,15 @@ x_opensuse_ver=(
 		15.0
 		15.1
 		15.2
+		15.3
+		15.4
+		15.5
 )
 w_sle_ver=3
 x_sle_ver=(
 		s11 4
 		s12 5
-		s15 3
+		s15 5
 )
 w_type=2
 x_type=(
