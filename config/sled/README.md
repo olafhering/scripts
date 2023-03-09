@@ -26,6 +26,7 @@
 	Settings / Power
 		Dim Screen: x
 		Screen Blank: 5 -> 2 minutes
+			Bug: must be "Never" to not interrupt remote session
 		Automatic Suspend: off
 		Power Button Behavior: Suspend->Nothing
 
