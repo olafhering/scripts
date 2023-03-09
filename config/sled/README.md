@@ -6,6 +6,10 @@
 	gsettings set org.gnome.settings-daemon.plugins.power idle-brightness 1
 	gsettings set org.gnome.settings-daemon.plugins.power idle-dim true
 
+	~/.config/gtk-3.0/settings.ini
+
+		[Settings]
+		gtk-primary-button-warps-slider = false
 
 	~/.config/gtk-3.0/gtk.css
 
