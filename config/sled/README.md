@@ -1,5 +1,11 @@
 
+	gsettings set org.gnome.desktop.interface clock-show-weekday true
+	gsettings set org.gnome.desktop.interface enable-animations false
+	gsettings set org.gnome.desktop.interface enable-hot-corners false
 	gsettings set org.gnome.desktop.interface overlay-scrolling false
+	gsettings set org.gnome.settings-daemon.plugins.power idle-brightness 1
+	gsettings set org.gnome.settings-daemon.plugins.power idle-dim true
+
 
 	~/.config/gtk-3.0/gtk.css
 
@@ -52,6 +58,7 @@
 		Suspend when laptop lid is closed: x -> -
 
 	Tweaks / Top Bar / Clock
+		Activities Overview Hot Corner: - -> x
 		Weekday: - -> x
 
 	Tweaks / Top Bar / Calendar
