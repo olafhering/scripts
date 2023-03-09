@@ -41,3 +41,9 @@
 		Allow connections to control the screen: - -> x
 		Require a password: some password
 		Network: eth0
+
+
+	Passwords and Keys / Passwords / Default keyring / Change password
+		set empty password
+		
+		
