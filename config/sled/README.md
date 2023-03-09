@@ -48,3 +48,16 @@
 		set empty password
 		
 		
+	Tweaks / General
+		Suspend when laptop lid is closed: x -> -
+
+	Tweaks / Top Bar / Clock
+		Weekday: - -> x
+
+	Tweaks / Top Bar / Calendar
+		Week Numbers: - -> x
+
+	Extensions
+		Applications Menu: - -> x
+		Desktop Icons: - -> x
+		Places Status Indicator: - -> x
