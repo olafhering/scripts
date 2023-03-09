@@ -19,3 +19,25 @@
 		user_pref("widget.non-native-theme.scrollbar.size.override", 22);
 		user_pref("widget.non-native-theme.scrollbar.style", 0);
 
+
+	Settings / Wi-Fi
+		Airplane Mode: - -> x
+
+	Settings / Power
+		Dim Screen: x
+		Screen Blank: 5 -> 2 minutes
+		Automatic Suspend: off
+		Power Button Behavior: Suspend->Nothing
+
+	Settings / Privacy /Screen Lock
+		Blank Screen Delay: 2 -> 1 minute
+		Automatic Screen Lock: x -> -
+
+	Settings / Accessibility
+		Large Text: - -> x
+
+	Settings / Sharing / Screen Sharing
+		Enable: - -> x
+		Allow connections to control the screen: - -> x
+		Require a password: some password
+		Network: eth0
